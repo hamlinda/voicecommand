@@ -2,7 +2,7 @@
 
 A lightweight, high-performance voice control service featuring client-side Web Speech recognition (inference) and local shell command automation.
 
-VoxCommand allows you to control your web browser and execute local applications/diagnostics on your host machine simply by speaking trigger phrases. It runs securely across your Local Area Network (LAN) by generating temporary self-signed SSL certificates to unlock browser microphone permissions on remote devices.
+VoxCommand allows you to control your web browser and execute local applications/diagnostics on your host machine simply by speaking trigger phrases. It runs across your Local Area Network (LAN) via a simple HTTP server.
 
 ---
 
@@ -101,7 +101,6 @@ All data operations are conducted via a lightweight JSON API served by the Expre
 
 - **Node.js**: Version `v22.x` or higher recommended.
 - **Express.js (`^4.19.2`)**: Handles static page serving and API requests.
-- **OpenSSL**: Required on the host OS to automatically generate SSL certificates (`key.pem` and `cert.pem`) at startup.
 - **Client Web Browser**: A browser supporting the `Web Speech API` (Google Chrome, Microsoft Edge, and Chromium-based browsers are strongly recommended).
   > [!NOTE]
   > Firefox and Safari have limited support for the continuous speech recognition attributes used by this application.
@@ -127,7 +126,7 @@ npm install
 ```
 
 ### 2. Background Startup
-Start the service in the background. This will check for SSL certificates, generate them using OpenSSL if they are missing, write the process PID to `server.pid`, and direct output streams to `server.log`:
+Start the service in the background. This will write the process PID to `server.pid` and direct output streams to `server.log`:
 ```bash
 ./start.sh
 ```
@@ -135,15 +134,20 @@ Upon startup, the script will echo the status log to display available access ad
 ```
 =============================================================
 VoxCommand Server is listening:
-  - Local:   https://localhost:3300
-  - LAN:     https://10.0.0.200:3300
+  - Local:   http://localhost:3300
+  - LAN:     http://10.0.0.200:3300
 =============================================================
 ```
 
 ### 3. Accessing the Dashboard & Enabling Mic
-1. Open Chrome/Edge and visit the **LAN URL** or `https://localhost:3300`.
-2. Since the server uses a self-signed SSL certificate, your browser will show a privacy warning. Click **Advanced** and select **Proceed to [IP] (unsafe)**. This is required so the browser flags the host as a **Secure Context**, enabling microphone permissions.
-3. Click the glowing **Microphone Orb** in the center of the page to start listening.
+1. Open Chrome, Edge, or any Chromium-based browser and visit the server address.
+   * **Local Loopback:** Visit `http://localhost:3300`. Since `localhost` is natively treated as a **Secure Context** by browsers, microphone permissions will work immediately out of the box with no extra configuration.
+   * **LAN access (Remote Devices):** Visit the LAN URL (e.g., `http://10.0.0.200:3300`). Because non-localhost HTTP is considered insecure, modern browsers will block microphone access. To bypass this security restriction and allow microphone input over local HTTP:
+     1. Open Chrome/Edge and go to `chrome://flags/#unsafely-treat-insecure-origin-as-secure`.
+     2. Enable the flag.
+     3. Add your server's LAN address (e.g., `http://10.0.0.200:3300`) to the input text box.
+     4. Relaunch the browser.
+2. Once loaded, click the glowing **Microphone Orb** in the center of the page to start listening and approve the microphone permission prompt.
 
 ### 4. Stopping the Service
 Stop the background execution cleanly, terminate subprocesses, and remove PID references:

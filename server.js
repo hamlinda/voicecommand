@@ -1,7 +1,6 @@
 const express = require('express');
 const fs = require('fs');
 const path = require('path');
-const https = require('https');
 const http = require('http');
 const os = require('os');
 const net = require('net');
@@ -10,21 +9,8 @@ const { exec, execSync } = require('child_process');
 const app = express();
 const PORT = process.env.PORT || 3300;
 const COMMANDS_FILE = path.join(__dirname, 'commands.json');
-const KEY_FILE = path.join(__dirname, 'key.pem');
-const CERT_FILE = path.join(__dirname, 'cert.pem');
 
-// Function to generate self-signed cert if missing
-function ensureSslCert() {
-  if (!fs.existsSync(KEY_FILE) || !fs.existsSync(CERT_FILE)) {
-    console.log("SSL certificate or key missing. Generating self-signed certificates for secure LAN access...");
-    try {
-      execSync(`openssl req -x509 -newkey rsa:2048 -keyout "${KEY_FILE}" -out "${CERT_FILE}" -sha256 -days 365 -nodes -subj "/CN=VoxCommand"`, { stdio: 'inherit' });
-      console.log("SSL certificates generated successfully.");
-    } catch (err) {
-      console.error("Failed to generate SSL certificates:", err);
-    }
-  }
-}
+
 
 // Function to get local LAN IP addresses
 function getLocalIpAddresses() {
@@ -233,34 +219,20 @@ async function getAvailablePort(startPort) {
 }
 
 async function startServer() {
-  ensureSslCert();
-
-  const useHttps = fs.existsSync(KEY_FILE) && fs.existsSync(CERT_FILE);
-  let server;
-
-  if (useHttps) {
-    const options = {
-      key: fs.readFileSync(KEY_FILE),
-      cert: fs.readFileSync(CERT_FILE)
-    };
-    server = https.createServer(options, app);
-  } else {
-    server = http.createServer(app);
-  }
+  const server = http.createServer(app);
 
   try {
     const actualPort = await getAvailablePort(PORT);
     
     server.listen(actualPort, '0.0.0.0', () => {
-      const protocol = useHttps ? 'https' : 'http';
       console.log(`\n=============================================================`);
       console.log(`VoxCommand Server is listening:`);
-      console.log(`  - Local:   ${protocol}://localhost:${actualPort}`);
+      console.log(`  - Local:   http://localhost:${actualPort}`);
       
       const ips = getLocalIpAddresses();
       if (ips.length > 0) {
         ips.forEach(ip => {
-          console.log(`  - LAN:     ${protocol}://${ip}:${actualPort}`);
+          console.log(`  - LAN:     http://${ip}:${actualPort}`);
         });
       } else {
         console.log(`  - LAN:     No active LAN interface found.`);

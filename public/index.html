@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VoxCommand | Lightweight Voice Assistant Web Service</title>
+  <!-- SEO & Meta Tags -->
+  <meta name="description" content="A lightweight voice-controlled automation system that runs speech-to-text inference in the browser to launch pages and run local commands.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="index.css">
+  <!-- FontAwesome for Premium Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+  <div class="stars"></div>
+  <div class="glow-bg"></div>
+
+  <div class="app-container">
+    <!-- Header -->
+    <header class="app-header">
+      <div class="logo-area">
+        <div class="logo-icon">
+          <i class="fa-solid fa-microphone-lines"></i>
+        </div>
+        <div class="logo-text">
+          <h1>VoxCommand</h1>
+          <p class="subtitle">Client-Side Inference • Local Automation</p>
+        </div>
+      </div>
+      
+      <div class="status-panel">
+        <div class="status-item">
+          <span class="status-dot disconnected" id="server-status-dot"></span>
+          <span class="status-label" id="server-status-text">Server: Disconnected</span>
+        </div>
+        <div class="status-item">
+          <span class="status-dot inactive" id="mic-status-dot"></span>
+          <span class="status-label" id="mic-status-text">Speech: Off</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Visualizer & Live Transcription -->
+    <section class="visualizer-section">
+      <div class="orb-container">
+        <div class="glow-ring glow-ring-1"></div>
+        <div class="glow-ring glow-ring-2"></div>
+        <canvas id="orb-canvas" width="200" height="200"></canvas>
+        <button class="mic-toggle-btn" id="mic-toggle" title="Toggle voice listening">
+          <i class="fa-solid fa-microphone" id="mic-icon"></i>
+        </button>
+      </div>
+      
+      <div class="transcript-display">
+        <div class="transcript-label" id="speech-label">Click mic to start listening</div>
+        <div class="transcript-bubble" id="live-transcript">...</div>
+      </div>
+    </section>
+
+    <!-- Dashboard Content -->
+    <div class="dashboard-grid">
+      
+      <!-- Command Registry -->
+      <section class="card glass-card command-registry-card">
+        <div class="card-header">
+          <div class="card-title">
+            <i class="fa-solid fa-list-check title-icon"></i>
+            <h2>Command Registry</h2>
+          </div>
+          <button class="btn btn-secondary btn-sm" id="reset-defaults-btn">
+            <i class="fa-solid fa-rotate-left"></i> Reset Defaults
+          </button>
+        </div>
+        <div class="card-body">
+          <div class="table-container">
+            <table class="command-table">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Trigger Phrase</th>
+                  <th>Type</th>
+                  <th>Action</th>
+                  <th style="width: 100px;">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="command-list-tbody">
+                <!-- Dynamically populated -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- Command Creator -->
+      <section class="card glass-card command-creator-card">
+        <div class="card-header">
+          <div class="card-title">
+            <i class="fa-solid fa-circle-plus title-icon animate-pulse"></i>
+            <h2>Add Custom Command</h2>
+          </div>
+        </div>
+        <div class="card-body">
+          <form id="command-form" class="command-form">
+            <input type="hidden" id="cmd-id" value="">
+            
+            <div class="form-group">
+              <label for="cmd-name">Command Name</label>
+              <div class="input-wrapper">
+                <i class="fa-solid fa-tag input-icon"></i>
+                <input type="text" id="cmd-name" placeholder="e.g., Run System Check" required>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="cmd-phrase">Voice Trigger Phrase <span class="info-tag">Lowercase works best</span></label>
+              <div class="input-wrapper">
+                <i class="fa-solid fa-quote-left input-icon"></i>
+                <input type="text" id="cmd-phrase" placeholder="e.g., run diagnostics" required>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="cmd-type">Action Type</label>
+              <div class="custom-select-wrapper">
+                <i class="fa-solid fa-sliders input-icon"></i>
+                <select id="cmd-type" required>
+                  <option value="web" selected>Launch Web Page (Browser)</option>
+                  <option value="local">Run Local Command (Backend)</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="cmd-action" id="action-label">Web URL</label>
+              <div class="input-wrapper">
+                <i class="fa-solid fa-link input-icon" id="action-icon"></i>
+                <input type="text" id="cmd-action" placeholder="https://google.com" required>
+              </div>
+              <p class="form-hint" id="action-hint">Enter the full web page address (include http/https)</p>
+            </div>
+
+            <div class="form-actions">
+              <button type="button" class="btn btn-secondary" id="cancel-edit-btn" style="display: none;">Cancel Edit</button>
+              <button type="submit" class="btn btn-primary" id="save-cmd-btn">
+                <i class="fa-solid fa-floppy-disk"></i> Save Command
+              </button>
+            </div>
+          </form>
+        </div>
+      </section>
+    </div>
+
+    <!-- Terminal Activity Logs -->
+    <section class="card glass-card console-card">
+      <div class="card-header">
+        <div class="card-title">
+          <i class="fa-solid fa-terminal title-icon"></i>
+          <h2>Activity Console</h2>
+        </div>
+        <button class="btn btn-icon" id="clear-console-btn" title="Clear console output">
+          <i class="fa-solid fa-trash-can"></i>
+        </button>
+      </div>
+      <div class="console-body" id="console-output">
+        <div class="console-line system-line">[SYSTEM] VoxCommand starting up...</div>
+        <div class="console-line system-line">[SYSTEM] Connecting to backend server...</div>
+      </div>
+    </section>
+  </div>
+
+  <!-- Speech feedback visual overlay -->
+  <div class="speech-overlay" id="speech-overlay">
+    <div class="speech-overlay-content">
+      <i class="fa-solid fa-volume-high animate-bounce text-neon-cyan"></i>
+      <span id="speech-overlay-text">Speaking...</span>
+    </div>
+  </div>
+
+  <script src="index.js"></script>
+</body>
+</html>

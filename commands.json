@@ -1,0 +1,44 @@
+[
+  {
+    "id": "1",
+    "name": "Google",
+    "phrase": "open google",
+    "type": "web",
+    "action": "https://www.google.com"
+  },
+  {
+    "id": "2",
+    "name": "YouTube",
+    "phrase": "open youtube",
+    "type": "web",
+    "action": "https://www.youtube.com"
+  },
+  {
+    "id": "3",
+    "name": "GitHub",
+    "phrase": "open github",
+    "type": "web",
+    "action": "https://github.com"
+  },
+  {
+    "id": "4",
+    "name": "Open Terminal",
+    "phrase": "open terminal",
+    "type": "local",
+    "action": "xterm || gnome-terminal || konsole"
+  },
+  {
+    "id": "5",
+    "name": "Open Calculator",
+    "phrase": "open calculator",
+    "type": "local",
+    "action": "gnome-calculator || xcalc || kcalc"
+  },
+  {
+    "id": "6",
+    "name": "System Check",
+    "phrase": "run diagnostics",
+    "type": "local",
+    "action": "uname -a && lscpu | head -n 10"
+  }
+]

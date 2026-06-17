@@ -1,0 +1,21 @@
+{
+  "name": "voicecommand-webservice",
+  "version": "1.0.0",
+  "description": "Lightweight voice assistant webservice with frontend-driven inference",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "keywords": [
+    "voice-commands",
+    "speech-recognition",
+    "webservice",
+    "automation"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.19.2"
+  }
+}

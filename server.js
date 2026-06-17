@@ -4,6 +4,7 @@ const path = require('path');
 const https = require('https');
 const http = require('http');
 const os = require('os');
+const net = require('net');
 const { exec, execSync } = require('child_process');
 
 const app = express();
@@ -199,34 +200,77 @@ app.post('/api/execute/:id', (req, res) => {
   });
 });
 
-ensureSslCert();
-
-const useHttps = fs.existsSync(KEY_FILE) && fs.existsSync(CERT_FILE);
-let server;
-
-if (useHttps) {
-  const options = {
-    key: fs.readFileSync(KEY_FILE),
-    cert: fs.readFileSync(CERT_FILE)
-  };
-  server = https.createServer(options, app);
-} else {
-  server = http.createServer(app);
+// Check if a port is available on interface 0.0.0.0
+function checkPortAvailable(port) {
+  return new Promise((resolve) => {
+    const tester = net.createServer()
+      .once('error', (err) => {
+        resolve(false);
+      })
+      .once('listening', () => {
+        tester.once('close', () => {
+          resolve(true);
+        }).close();
+      })
+      .listen(port, '0.0.0.0');
+  });
 }
 
-server.listen(PORT, '0.0.0.0', () => {
-  const protocol = useHttps ? 'https' : 'http';
-  console.log(`\n=============================================================`);
-  console.log(`VoxCommand Server is listening:`);
-  console.log(`  - Local:   ${protocol}://localhost:${PORT}`);
-  
-  const ips = getLocalIpAddresses();
-  if (ips.length > 0) {
-    ips.forEach(ip => {
-      console.log(`  - LAN:     ${protocol}://${ip}:${PORT}`);
-    });
-  } else {
-    console.log(`  - LAN:     No active LAN interface found.`);
+// Find first available port starting at startPort
+async function getAvailablePort(startPort) {
+  let port = startPort;
+  while (true) {
+    const isAvailable = await checkPortAvailable(port);
+    if (isAvailable) {
+      return port;
+    }
+    console.log(`Port ${port} is already in use. Scanning next port...`);
+    port++;
+    if (port > startPort + 100) {
+      throw new Error("Could not find any available port in range of +100 ports.");
+    }
   }
-  console.log(`=============================================================\n`);
-});
+}
+
+async function startServer() {
+  ensureSslCert();
+
+  const useHttps = fs.existsSync(KEY_FILE) && fs.existsSync(CERT_FILE);
+  let server;
+
+  if (useHttps) {
+    const options = {
+      key: fs.readFileSync(KEY_FILE),
+      cert: fs.readFileSync(CERT_FILE)
+    };
+    server = https.createServer(options, app);
+  } else {
+    server = http.createServer(app);
+  }
+
+  try {
+    const actualPort = await getAvailablePort(PORT);
+    
+    server.listen(actualPort, '0.0.0.0', () => {
+      const protocol = useHttps ? 'https' : 'http';
+      console.log(`\n=============================================================`);
+      console.log(`VoxCommand Server is listening:`);
+      console.log(`  - Local:   ${protocol}://localhost:${actualPort}`);
+      
+      const ips = getLocalIpAddresses();
+      if (ips.length > 0) {
+        ips.forEach(ip => {
+          console.log(`  - LAN:     ${protocol}://${ip}:${actualPort}`);
+        });
+      } else {
+        console.log(`  - LAN:     No active LAN interface found.`);
+      }
+      console.log(`=============================================================\n`);
+    });
+  } catch (err) {
+    console.error("FATAL: Failed to start server:", err.message);
+    process.exit(1);
+  }
+}
+
+startServer();
